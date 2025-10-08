@@ -60,14 +60,9 @@
     color:var(--muted);font-size:13px;
     display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden
   }
-  /* quando expandida remove o clamp */
-  .desc.open{
-    display:block; -webkit-line-clamp:unset; overflow:visible
-  }
-  /* botão ver mais/menos */
+  .desc.open{ display:block; -webkit-line-clamp:unset; overflow:visible }
   .toggle-desc{
-    align-self:flex-start;
-    background:transparent; border:0; color:var(--btn);
+    align-self:flex-start; background:transparent; border:0; color:var(--btn);
     font-weight:900; font-size:13px; cursor:pointer; padding:0; margin-top:-6px
   }
 
@@ -75,6 +70,7 @@
   .old{color:#a3a3a3;text-decoration:line-through;font-size:12px;margin-left:6px}
   .row{display:flex;align-items:center;justify-content:space-between;gap:8px}
   .btn{display:inline-flex;align-items:center;justify-content:center;padding:10px 12px;border-radius:12px;border:1px solid transparent;background:var(--btn);color:#052015;font-weight:900;text-decoration:none;cursor:pointer}
+  .btn.ghost{background:transparent;border-color:#2a315f;color:var(--text)}
   .dots{display:flex;gap:6px;justify-content:center;margin-top:8px}
   .dot{width:6px;height:6px;border-radius:999px;background:#2a315f}
   .dot.active{background:var(--btn)}
@@ -122,6 +118,27 @@
   .vnext{right:16px; top:50%; transform:translateY(-50%)}
   .vcount{position:absolute; bottom:14px; left:50%; transform:translateX(-50%);
           background:#0009; color:#fff; padding:4px 10px; border-radius:999px; font-weight:700; font-size:12px}
+
+  /* ===== SACOLA (drawer) ===== */
+  .cart{position:fixed; inset:0; display:none; z-index:9998; background:rgba(0,0,0,.55); backdrop-filter:blur(4px)}
+  .cart.show{display:block}
+  .cart-panel{position:absolute; right:0; top:0; bottom:0; width:min(520px,92vw);
+    background:var(--card); border-left:1px solid var(--line); box-shadow:-10px 0 30px rgba(0,0,0,.35);
+    display:flex; flex-direction:column}
+  .cart-head{display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid var(--line); font-weight:900; letter-spacing:.3px}
+  .cart-close{background:transparent; border:0; color:var(--muted); font-size:22px; cursor:pointer}
+  .cart-body{padding:10px 12px; overflow-y:auto; gap:10px; display:flex; flex-direction:column}
+  .cart-empty{color:var(--muted); text-align:center; padding:24px 8px}
+  .cart-item{display:grid; grid-template-columns:64px 1fr auto; gap:10px; align-items:center; border:1px solid var(--line); border-radius:12px; padding:8px; background:#0e1330}
+  .cart-item img{width:64px; height:64px; object-fit:cover; border-radius:8px}
+  .cart-title{font-weight:800; font-size:14px; margin:0 0 4px 0}
+  .cart-price{color:var(--price); font-weight:900; font-size:14px}
+  .qty{display:inline-flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:10px; padding:4px 6px}
+  .qty button{background:transparent; border:0; color:var(--text); font-weight:900; cursor:pointer; width:22px; height:22px}
+  .remove{background:transparent; border:0; color:#ff9a9a; cursor:pointer; font-weight:900}
+  .cart-foot{margin-top:auto; border-top:1px solid var(--line); padding:12px 14px; display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap}
+  .cart-total{font-weight:900}
+  .cart-btn{padding:10px 14px; border-radius:12px; border:1px solid transparent; background:var(--btn); color:#052015; font-weight:900; cursor:pointer}
 </style>
 </head>
 <body>
@@ -156,14 +173,16 @@
     <div class="bar" id="bar" style="display:none">
       <div class="left">
         <div><span id="qtd">0</span> item(ns) • <span id="total" class="sum">R$ 0,00</span></div>
-        <!-- FORMA DE PAGAMENTO -->
         <div class="pay" role="radiogroup" aria-label="Forma de pagamento">
           <label class="pill"><input type="radio" name="pg" value="PIX" checked><span>PIX</span></label>
           <label class="pill"><input type="radio" name="pg" value="Cartão"><span>Cartão</span></label>
           <label class="pill"><input type="radio" name="pg" value="Dinheiro"><span>Dinheiro</span></label>
         </div>
       </div>
-      <button id="finalizar" class="btn">finalizar no WhatsApp</button>
+      <div style="display:flex; gap:8px">
+        <button id="abrirSacola" class="btn ghost">ver sacola</button>
+        <button id="finalizar" class="btn">finalizar no WhatsApp</button>
+      </div>
     </div>
   </div>
 
@@ -177,6 +196,26 @@
     <img id="vImg" alt="Imagem do produto">
     <button id="vNext"  class="vnext"  title="Próxima" aria-label="Próxima">›</button>
     <div id="vCount" class="vcount"></div>
+  </div>
+
+  <!-- Sacola (drawer) -->
+  <div id="cart" class="cart" role="dialog" aria-modal="true" aria-label="Sacola">
+    <div class="cart-panel">
+      <div class="cart-head">
+        <span>Sacola</span>
+        <button id="cartClose" class="cart-close" title="Fechar">×</button>
+      </div>
+      <div id="cartBody" class="cart-body">
+        <div class="cart-empty">Sua sacola está vazia.</div>
+      </div>
+      <div class="cart-foot">
+        <div class="cart-total">Total: <span id="cartTotal">R$ 0,00</span></div>
+        <div style="display:flex; gap:8px; align-items:center">
+          <button id="cartClear" class="remove" title="Esvaziar sacola">esvaziar</button>
+          <button id="cartCheckout" class="cart-btn">finalizar no WhatsApp</button>
+        </div>
+      </div>
+    </div>
   </div>
 
 <script>
@@ -266,8 +305,7 @@
     if(e.key === 'ArrowLeft') vShow(vIdx-1);
     if(e.key === 'ArrowRight') vShow(vIdx+1);
   });
-  // swipe no viewer
-  (function(){
+  (function(){ // swipe no viewer
     let sx=null;
     viewer.addEventListener('touchstart', ev=>{ if(!viewer.classList.contains('show')) return; sx = ev.touches[0].clientX; }, {passive:true});
     viewer.addEventListener('touchend', ev=>{
@@ -320,16 +358,11 @@
       `;
       track.appendChild(card);
 
-      // ===== Navegação de fotos por card + abrir viewer ao clicar
+      // navegação de fotos + viewer
       const thumb = card.querySelector('.thumb');
       const imgEl = thumb.querySelector('img');
       let idx = 0;
-
-      imgEl.addEventListener('click', (e)=>{
-        e.stopPropagation();
-        openViewer(fotos, idx);
-      });
-
+      imgEl.addEventListener('click', (e)=>{ e.stopPropagation(); openViewer(fotos, idx); });
       if (totalFotos > 1) {
         const prev = thumb.querySelector('.prev');
         const next = thumb.querySelector('.next');
@@ -337,8 +370,6 @@
         const show = (k) => { idx = (k + totalFotos) % totalFotos; imgEl.src = fotos[idx]; if (counter) counter.textContent = `${idx+1}/${totalFotos}`; };
         prev?.addEventListener('click', (e)=>{ e.stopPropagation(); show(idx-1); });
         next?.addEventListener('click', (e)=>{ e.stopPropagation(); show(idx+1); });
-
-        // swipe na imagem (card)
         let startX=null;
         thumb.addEventListener('touchstart', ev => { startX = ev.touches[0].clientX; }, {passive:true});
         thumb.addEventListener('touchend', ev => {
@@ -349,10 +380,9 @@
         }, {passive:true});
       }
 
-      // ===== Ver mais / ver menos (descrição)
+      // ver mais / ver menos
       const descEl = card.querySelector('.desc');
       if (descEl) {
-        // aguarda render para medir
         requestAnimationFrame(() => {
           const isOverflowing = descEl.scrollHeight > descEl.clientHeight + 1;
           if (isOverflowing) {
@@ -375,7 +405,7 @@
       btn.onclick = () => addCarrinho(filtrados()[btn.dataset.i]);
     });
 
-    // dots da lista
+    // dots
     const n = Math.max(1, track.children.length);
     dots.innerHTML = Array.from({length:n}, (_,i)=>`<span class="dot${i===0?' active':''}"></span>`).join('');
     updateDots();
@@ -395,7 +425,7 @@
   }
   track.addEventListener('scroll', () => requestAnimationFrame(updateDots), {passive:true});
 
-  /* ===== Auto-slide da lista (vertical) ===== */
+  /* ===== Auto-slide ===== */
   function nextSlide(){
     if(!track.children.length) return;
     const sh = stepSize();
@@ -410,10 +440,10 @@
   ['pointerup','touchend','mouseleave'].forEach(ev=>track.addEventListener(ev, startAuto, {passive:true}));
   document.addEventListener('visibilitychange', ()=> document.hidden ? stopAuto() : startAuto());
 
-  /* ===== Carrinho / WhatsApp ===== */
+  /* ===== Carrinho / Sacola ===== */
   const bar = $('#bar'), qtdEl = $('#qtd'), totalEl = $('#total');
+  const cart = $('#cart'), cartBody = $('#cartBody'), cartTotal = $('#cartTotal');
 
-  // forma de pagamento: monitora os rádios
   document.querySelectorAll('input[name="pg"]').forEach(inp=>{
     inp.addEventListener('change', ()=>{ if(inp.checked) formaPagamento = inp.value; });
   });
@@ -421,9 +451,20 @@
   function addCarrinho(p){
     const id = p.id || p.titulo;
     const found = carrinho.find(i=>i.id===id);
-    if(found) found.qtd += 1; else carrinho.push({id, titulo:p.titulo, preco:Number(p.preco||0), qtd:1});
-    renderBar();
+    if(found) found.qtd += 1;
+    else carrinho.push({id, titulo:p.titulo, preco:Number(p.preco||0), qtd:1, foto:(Array.isArray(p.fotos)&&p.fotos[0])||''});
+    renderBar(); renderCart(); openCart(); // abre a sacola ao adicionar
   }
+
+  function inc(id){ const it = carrinho.find(i=>i.id===id); if(!it) return; it.qtd++; renderBar(); renderCart(); }
+  function dec(id){
+    const it = carrinho.find(i=>i.id===id); if(!it) return;
+    it.qtd--; if(it.qtd<=0) carrinho = carrinho.filter(i=>i.id!==id);
+    renderBar(); renderCart();
+  }
+  function removeItem(id){ carrinho = carrinho.filter(i=>i.id!==id); renderBar(); renderCart(); }
+  function clearCart(){ carrinho = []; renderBar(); renderCart(); }
+
   function renderBar(){
     const qtd = carrinho.reduce((s,i)=>s+i.qtd,0);
     const total = carrinho.reduce((s,i)=>s+i.preco*i.qtd,0);
@@ -431,13 +472,65 @@
     totalEl.textContent = fmt.format(total);
     bar.style.display = qtd ? 'flex' : 'none';
   }
-  $('#finalizar').onclick = () => {
+
+  function renderCart(){
+    cartBody.innerHTML = '';
+    if (!carrinho.length) {
+      cartBody.innerHTML = '<div class="cart-empty">Sua sacola está vazia.</div>';
+    } else {
+      carrinho.forEach(it=>{
+        const li = document.createElement('div');
+        li.className = 'cart-item';
+        li.innerHTML = `
+          <img src="${it.foto||''}" alt="${escapeHTML(it.titulo)}">
+          <div>
+            <div class="cart-title">${escapeHTML(it.titulo)}</div>
+            <div class="cart-price">${fmt.format(it.preco)}</div>
+          </div>
+          <div class="cart-actions">
+            <div class="qty">
+              <button aria-label="diminuir" data-act="dec" data-id="${it.id}">−</button>
+              <strong>${it.qtd}</strong>
+              <button aria-label="aumentar" data-act="inc" data-id="${it.id}">+</button>
+            </div>
+            <button class="remove" data-act="rem" data-id="${it.id}" title="remover">remover</button>
+          </div>
+        `;
+        cartBody.appendChild(li);
+      });
+    }
+    const total = carrinho.reduce((s,i)=>s+i.preco*i.qtd,0);
+    cartTotal.textContent = fmt.format(total);
+
+    // listeners dos botões dentro da sacola
+    cartBody.querySelectorAll('[data-act]').forEach(b=>{
+      b.onclick = () => {
+        const id = b.getAttribute('data-id');
+        const act = b.getAttribute('data-act');
+        if (act==='inc') inc(id);
+        if (act==='dec') dec(id);
+        if (act==='rem') removeItem(id);
+      };
+    });
+  }
+
+  function openCart(){ cart.classList.add('show'); document.body.style.overflow='hidden'; }
+  function closeCart(){ cart.classList.remove('show'); document.body.style.overflow=''; }
+
+  $('#abrirSacola').onclick = openCart;
+  $('#cartClose').onclick = closeCart;
+  cart.addEventListener('click', (e)=>{ if(e.target===cart) closeCart(); });
+  $('#cartClear').onclick = clearCart;
+
+  function checkout(){
+    if (!carrinho.length) return;
     const linhas = carrinho.map(i => `${i.qtd}x ${i.titulo} — ${fmt.format(i.preco)}`).join('\n');
     const total = fmt.format(carrinho.reduce((s,i)=>s+i.preco*i.qtd,0));
-    const msg =
-      `Olá! Quero finalizar a compra:%0A%0A${encodeURIComponent(linhas)}%0A%0ATotal: ${encodeURIComponent(total)}%0AForma de pagamento: ${encodeURIComponent(formaPagamento)}`;
+    const msg = `Olá! Quero finalizar a compra:%0A%0A${encodeURIComponent(linhas)}%0A%0ATotal: ${encodeURIComponent(total)}%0AForma de pagamento: ${encodeURIComponent(formaPagamento)}`;
     window.open(`https://wa.me/${numeroWA}?text=${msg}`, '_blank');
-  };
+  }
+  $('#finalizar').onclick = checkout;
+  $('#cartCheckout').onclick = checkout;
 
   /* ===== Botão ADM ===== */
   document.getElementById('btnAdm').addEventListener('click', () => {
